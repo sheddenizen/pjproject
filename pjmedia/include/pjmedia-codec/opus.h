@@ -104,6 +104,7 @@ typedef struct pjmedia_codec_opus_config
     unsigned   packet_loss; /**< Encoder's expected packet loss pct.	*/
     unsigned   complexity;  /**< Encoder complexity, 0-10(10 is highest)*/
     pj_bool_t  cbr;         /**< Constant bit rate?			*/
+    pj_bool_t  music;       /**< Optimised for music (true) or speech */ 
 } pjmedia_codec_opus_config;
 
 

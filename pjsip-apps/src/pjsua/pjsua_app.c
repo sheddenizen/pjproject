@@ -21,6 +21,11 @@
 
 #define THIS_FILE	"pjsua_app.c"
 
+/* Break all the layering */
+#if PJSUA_APP_HAS_PORTAUDIO
+#include <portaudio.h>
+#endif
+
 //#define STEREO_DEMO
 //#define TRANSPORT_ADAPTER_SAMPLE
 //#define HAVE_MULTIPART_TEST
@@ -1202,6 +1207,73 @@ void legacy_on_stopped(pj_bool_t restart)
 	(*app_cfg.on_stopped)(restart, 1, NULL);
 }
 
+static void enumerate_audio_devices()
+{
+	pjmedia_aud_dev_info info[64];
+	unsigned count = 64;
+
+	pj_status_t status = pjsua_enum_aud_devs(info, &count);
+	
+	if (PJ_SUCCESS == status) {
+		unsigned n;
+		unsigned i;
+		printf("Audio devices: \n");
+		for (n = 0; n < count; n++) {
+			printf("  %u: I: %u O: %u DR: %u %s: %s - ", n, 
+				info[n].input_count, info[n].output_count, 
+				info[n].default_samples_per_sec, 
+				info[n].driver, info[n].name);
+
+			for (i=0; i<32; ++i) {
+				if (info[n].caps & (1 << i))
+					printf("%s, ", pjmedia_aud_dev_cap_name(1 << i, NULL));
+			}
+			printf("\n");
+		}
+	}
+	else {
+	    PJ_PERROR(1,(THIS_FILE, status, "Error enumerating audio devices"));
+	}
+	
+	
+}	                                        
+	                                         
+static int find_audio_device_by_name(const char *name_to_find, pj_bool_t is_playback)
+{
+	pjmedia_aud_dev_info info[64];
+	unsigned count = 64;
+
+	if (!name_to_find || name_to_find[0] == 0) {
+		return PJSUA_INVALID_ID;
+	}
+	
+	pj_status_t status = pjsua_enum_aud_devs(info, &count);
+		
+	if (PJ_SUCCESS == status) {
+		unsigned n;
+		unsigned i;
+		printf("Audio devices: \n");
+		for (n = 0; n < count; n++) {
+			if (strncmp(name_to_find, info[n].name, sizeof(info[n].name)) == 0 
+				&& (is_playback ? info[n].output_count : info[n].input_count) > 0) {
+				PJ_LOG(4, (THIS_FILE, "Found matching %s device %u: I: %u O: %u DR: %u %s: %s", 
+					is_playback ? "playback" : "capture", n, 
+					info[n].input_count, info[n].output_count, 
+					info[n].default_samples_per_sec, 
+					info[n].driver, info[n].name));
+				return n;
+			}
+		}
+	    PJ_PERROR(1,(THIS_FILE, status, "Unable to find %s audio device, %.64s", 
+	
+			is_playback ? "playback" : "capture", name_to_find));
+	}
+	else {
+	    PJ_PERROR(1,(THIS_FILE, status, "Error enumerating audio devices"));
+	}
+	return PJSUA_INVALID_ID;
+}	                                        
+
 /*****************************************************************************
  * Public API
  */
@@ -1259,6 +1331,29 @@ static pj_status_t app_init()
 	return status;
     }
 
+#if PJSUA_APP_HAS_PORTAUDIO
+	if (app_config.jack_client_name[0] != 0) {
+		PaErrorCode pa_error = PaJack_SetClientName(app_config.jack_client_name);
+		if (pa_error != paNoError)
+		{
+			PJ_LOG(1,(THIS_FILE, "\n#### Error setting Jack client name to %.64s\n",
+				app_config.jack_client_name));
+		}
+		else
+		{
+			PJ_LOG(4,(THIS_FILE, "\n#### Set Jack client name to %.64s\n",
+				app_config.jack_client_name));
+		}
+	}
+	else
+	{
+			PJ_LOG(4,(THIS_FILE, "\n#### Cunt fuck fuck Jack client name to %.64s\n",
+				app_config.jack_client_name));
+	}
+#else
+#erro fuck fuck fuck
+#endif
+
     /* Initialize application callbacks */
     app_config.cfg.cb.on_call_state = &on_call_state;
     app_config.cfg.cb.on_call_media_state = &on_call_media_state;
@@ -1299,7 +1394,7 @@ static pj_status_t app_init()
 	pj_pool_release(tmp_pool);
 	return status;
     }
-
+	
     /* Initialize our module to handle otherwise unhandled request */
     status = pjsip_endpt_register_module(pjsua_get_pjsip_endpt(),
 					 &mod_default_handler);
@@ -1309,6 +1404,9 @@ static pj_status_t app_init()
 #ifdef STEREO_DEMO
     stereo_demo();
 #endif
+    /* Show user list of audio devices */
+	if (app_config.enum_aud)
+		enumerate_audio_devices();
 
     /* Initialize calls data */
     for (i=0; i<PJ_ARRAY_SIZE(app_config.call_data); ++i) {
@@ -1797,6 +1895,13 @@ static pj_status_t app_init()
     }
 #endif
 
+	/* If sound device indices not specified, then look for the devices by name */
+    if (app_config.capture_dev  == PJSUA_INVALID_ID) {
+		app_config.capture_dev = find_audio_device_by_name(app_config.capture_dev_name, PJ_FALSE);
+	}
+    if (app_config.playback_dev == PJSUA_INVALID_ID)  {
+		app_config.playback_dev = find_audio_device_by_name(app_config.playback_dev_name, PJ_TRUE);
+	}
     if (app_config.capture_dev  != PJSUA_INVALID_ID ||
         app_config.playback_dev != PJSUA_INVALID_ID) 
     {

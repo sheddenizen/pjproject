@@ -2396,8 +2396,13 @@ void HalfFloatRow_C(const uint16* src, uint16* dst, float scale, int width) {
   int i;
   float mult = 1.9259299444e-34f * scale;
   for (i = 0; i < width; ++i) {
-    float value = src[i] * mult;
-    dst[i] = (uint16)((*(uint32_t*)&value) >> 13);
+    // Avoid strict aliasing rules using union
+    union {
+        float f;
+        uint32_t u;
+    } value;
+    value.f = src[i] * mult;
+    dst[i] = (uint16)(value.u >> 13);
   }
 }
 

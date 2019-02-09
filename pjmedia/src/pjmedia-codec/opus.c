@@ -152,12 +152,13 @@ static struct opus_codec_factory opus_codec_factory;
 static pjmedia_codec_opus_config opus_cfg =
 {
     PJMEDIA_CODEC_OPUS_DEFAULT_SAMPLE_RATE,     /* Sample rate		*/
-    1,						/* Channel count	*/
+    PJMEDIA_CODEC_OPUS_DEFAULT_CHANNEL_COUNT,	/* Channel count	*/
     PTIME,					/* Frame time 		*/			
     PJMEDIA_CODEC_OPUS_DEFAULT_BIT_RATE,	/* Bit rate             */
     5,						/* Expected packet loss */
     PJMEDIA_CODEC_OPUS_DEFAULT_COMPLEXITY,	/* Complexity           */
     PJMEDIA_CODEC_OPUS_DEFAULT_CBR,		/* Constant bit rate    */
+    PJMEDIA_CODEC_OPUS_DEFAULT_MUSIC,	/* True for music over speech */
 };
 
 
@@ -720,14 +721,14 @@ static pj_status_t  codec_open( pjmedia_codec *codec,
     err = opus_encoder_init(opus_data->enc,
 			    opus_data->cfg.sample_rate,
 			    attr->info.channel_cnt,
-			    OPUS_APPLICATION_VOIP);
+			    opus_data->cfg.music ? OPUS_APPLICATION_AUDIO : OPUS_APPLICATION_VOIP);
     if (err != OPUS_OK) {
 	PJ_LOG(2, (THIS_FILE, "Unable to create encoder"));
 	return PJMEDIA_CODEC_EFAILED;
     }
     
     /* Set signal type */
-    opus_encoder_ctl(opus_data->enc, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
+    opus_encoder_ctl(opus_data->enc, OPUS_SET_SIGNAL(opus_data->cfg.music ? OPUS_SIGNAL_MUSIC : OPUS_SIGNAL_VOICE));
     /* Set bitrate */
     opus_encoder_ctl(opus_data->enc, OPUS_SET_BITRATE(auto_bit_rate?
     						      OPUS_AUTO:

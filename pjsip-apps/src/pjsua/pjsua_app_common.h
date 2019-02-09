@@ -131,8 +131,13 @@ typedef struct pjsua_app_config
 			    speaker_level;
 
     int			    capture_dev, playback_dev;
+    char			capture_dev_name[PJMEDIA_AUD_DEV_INFO_NAME_LEN];
+    char			playback_dev_name[PJMEDIA_AUD_DEV_INFO_NAME_LEN];
     unsigned		    capture_lat, playback_lat;
-
+    pj_bool_t       enum_aud;
+#if PJSUA_APP_HAS_PORTAUDIO
+    char			jack_client_name[PJMEDIA_AUD_DEV_INFO_NAME_LEN];
+#endif
     pj_bool_t		    no_tones;
     int			    ringback_slot;
     int			    ringback_cnt;

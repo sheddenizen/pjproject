@@ -156,10 +156,13 @@ static void usage(void)
     				  xstr(PJSUA_DEFAULT_ILBC_MODE) ")");
     puts  ("  --capture-dev=id    Audio capture device ID (default=-1)");
     puts  ("  --playback-dev=id   Audio playback device ID (default=-1)");
+    puts  ("  --capture-dev-name  Audio capture device name");
+    puts  ("  --playback-dev-name Audio playback device name");
     puts  ("  --capture-lat=N     Audio capture latency, in ms (default="
     				  xstr(PJMEDIA_SND_DEFAULT_REC_LATENCY) ")");
     puts  ("  --playback-lat=N    Audio playback latency, in ms (default="
     				  xstr(PJMEDIA_SND_DEFAULT_PLAY_LATENCY) ")");
+    puts  ("  --enum-aud          List audio all devices");
     puts  ("  --snd-auto-close=N  Auto close audio device when idle for N secs (default=1)");
     puts  ("                      Specify N=-1 to disable this feature.");
     puts  ("                      Specify N=0 for instant close when unused.");
@@ -373,7 +376,12 @@ static pj_status_t parse_args(int argc, char *argv[],
 	   OPT_TLS_PASSWORD, OPT_TLS_VERIFY_SERVER, OPT_TLS_VERIFY_CLIENT,
 	   OPT_TLS_NEG_TIMEOUT, OPT_TLS_CIPHER,
 	   OPT_CAPTURE_DEV, OPT_PLAYBACK_DEV,
-	   OPT_CAPTURE_LAT, OPT_PLAYBACK_LAT, OPT_NO_TONES, OPT_JB_MAX_SIZE,
+	   OPT_CAPTURE_LAT, OPT_PLAYBACK_LAT, 
+	   OPT_CAPTURE_DEV_NAME, OPT_PLAYBACK_DEV_NAME,
+	   OPT_ENUM_AUD, OPT_NO_TONES, OPT_JB_MAX_SIZE,
+#if PJSUA_APP_HAS_PORTAUDIO
+	   OPT_JACK_CLIENT_NAME,
+#endif
 	   OPT_STDOUT_REFRESH, OPT_STDOUT_REFRESH_TEXT, OPT_IPV6, OPT_QOS,
 #ifdef _IONBF
 	   OPT_STDOUT_NO_BUF,
@@ -490,8 +498,15 @@ static pj_status_t parse_args(int argc, char *argv[],
 #endif
 	{ "capture-dev",    1, 0, OPT_CAPTURE_DEV},
 	{ "playback-dev",   1, 0, OPT_PLAYBACK_DEV},
+	{ "capture-dev-name", 1, 0, OPT_CAPTURE_DEV_NAME}, 
+	{ "playback-dev-name", 1, 0, OPT_PLAYBACK_DEV_NAME},
 	{ "capture-lat",    1, 0, OPT_CAPTURE_LAT},
 	{ "playback-lat",   1, 0, OPT_PLAYBACK_LAT},
+	{ "enum-aud",   	0, 0, OPT_ENUM_AUD},
+#if PJSUA_APP_HAS_PORTAUDIO
+    { "jack-client-name",1, 0, OPT_JACK_CLIENT_NAME},
+#endif
+
 	{ "stdout-refresh", 1, 0, OPT_STDOUT_REFRESH},
 	{ "stdout-refresh-text", 1, 0, OPT_STDOUT_REFRESH_TEXT},
 #ifdef _IONBF
@@ -1285,6 +1300,14 @@ static pj_status_t parse_args(int argc, char *argv[],
 	    cfg->playback_dev = atoi(pj_optarg);
 	    break;
 
+	case OPT_CAPTURE_DEV_NAME:
+		strncpy(cfg->capture_dev_name, pj_optarg, sizeof(cfg->capture_dev_name));
+		break;
+
+	case OPT_PLAYBACK_DEV_NAME:
+		strncpy(cfg->playback_dev_name, pj_optarg, sizeof(cfg->playback_dev_name));
+		break;
+
 	case OPT_STDOUT_REFRESH:
 	    stdout_refresh = atoi(pj_optarg);
 	    break;
@@ -1307,6 +1330,16 @@ static pj_status_t parse_args(int argc, char *argv[],
 	case OPT_PLAYBACK_LAT:
 	    cfg->playback_lat = atoi(pj_optarg);
 	    break;
+
+	case OPT_ENUM_AUD:
+		cfg->enum_aud = PJ_TRUE;
+		break;
+
+#if PJSUA_APP_HAS_PORTAUDIO
+	case OPT_JACK_CLIENT_NAME:
+		strncpy(cfg->jack_client_name, pj_optarg, sizeof(cfg->jack_client_name));
+		break;
+#endif
 
 	case OPT_SND_AUTO_CLOSE:
 	    cfg->media_cfg.snd_auto_close_time = atoi(pj_optarg);
@@ -1490,6 +1523,8 @@ static void default_config()
     cfg->mic_level = cfg->speaker_level = 1.0;
     cfg->capture_dev = PJSUA_INVALID_ID;
     cfg->playback_dev = PJSUA_INVALID_ID;
+    cfg->capture_dev_name[0] = 0; 
+    cfg->playback_dev_name[0] = 0; 
     cfg->capture_lat = PJMEDIA_SND_DEFAULT_REC_LATENCY;
     cfg->playback_lat = PJMEDIA_SND_DEFAULT_PLAY_LATENCY;
     cfg->ringback_slot = PJSUA_INVALID_ID;

@@ -486,6 +486,15 @@
 #endif
 
 /**
+ * OPUS codec number of channels.
+ *
+ * Default: 2
+ */
+#ifndef PJMEDIA_CODEC_OPUS_DEFAULT_CHANNEL_COUNT
+#   define PJMEDIA_CODEC_OPUS_DEFAULT_CHANNEL_COUNT  2
+#endif
+
+/**
  * OPUS codec default maximum average bit rate.
  *
  * Default: 0 (leave it to default value specified by Opus, which will
@@ -515,6 +524,15 @@
  */
 #ifndef PJMEDIA_CODEC_OPUS_DEFAULT_CBR
 #   define PJMEDIA_CODEC_OPUS_DEFAULT_CBR 		PJ_FALSE
+#endif
+
+/**
+ * OPUS default signal type setting
+ *
+ * Default: PJ_TRUE (which means Opus will optimize for Music)
+ */
+#ifndef PJMEDIA_CODEC_OPUS_DEFAULT_MUSIC
+#   define PJMEDIA_CODEC_OPUS_DEFAULT_MUSIC      PJ_TRUE
 #endif
 
 
