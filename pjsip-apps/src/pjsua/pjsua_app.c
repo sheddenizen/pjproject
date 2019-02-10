@@ -1345,13 +1345,6 @@ static pj_status_t app_init()
 				app_config.jack_client_name));
 		}
 	}
-	else
-	{
-			PJ_LOG(4,(THIS_FILE, "\n#### Cunt fuck fuck Jack client name to %.64s\n",
-				app_config.jack_client_name));
-	}
-#else
-#erro fuck fuck fuck
 #endif
 
     /* Initialize application callbacks */
